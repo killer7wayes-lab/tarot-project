@@ -1,30 +1,32 @@
 export async function POST(request) {
   try {
-    // Get the data sent from the frontend
-    const body = await request.json();
-    console.log('Received data:', body);
+    // Get the data from frontend
+    const { cards, question, spread } = await request.json();
     
-    // Here you would add your actual chat logic
-    // For now, let's just return a success message
+    console.log('Received interpretation request:', {
+      cards, question, spread
+    });
+
+    // TODO: Add your actual tarot interpretation logic here
+    // For now, return a sample interpretation
+    const interpretation = {
+      reading: "This is a sample interpretation. Add your tarot logic here!",
+      cards: cards || [],
+      summary: "Your reading suggests positive changes ahead.",
+      advice: "Trust your intuition and move forward with confidence."
+    };
+
     return Response.json({ 
       success: true, 
-      message: "Chat API is working!",
-      receivedData: body
+      ...interpretation
     });
     
   } catch (error) {
-    console.error('Error in chat API:', error);
+    console.error('Interpretation error:', error);
     return Response.json({ 
-      error: "Something went wrong" 
+      error: "Failed to generate interpretation" 
     }, { 
       status: 500 
     });
   }
-}
-
-// Optional: If you want to allow GET requests too
-export async function GET() {
-  return Response.json({ 
-    message: "Chat API is running!" 
-  });
 }
