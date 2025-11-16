@@ -161,7 +161,7 @@ Please provide a warm, insightful reading with card meanings, how they relate to
 
       console.log('Sending request to API...');
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/interpret', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
