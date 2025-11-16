@@ -1,67 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+
+const SIMPLE_DECK = [
+  "The Fool",
+  "The Magician",
+  "The High Priestess",
+  "The Empress",
+  "The Emperor",
+  "The Lovers",
+  "The Chariot",
+];
 
 export default function TarotApp() {
-  const [cards, setCards] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
-  const [questionInput, setQuestionInput] = useState("");
-  const [aiStatus, setAiStatus] = useState("");
-  const [interpretation, setInterpretation] = useState("");
-  const [spreadType, setSpreadType] = useState("three");
+  const [question, setQuestion] = useState("");
+  const [card, setCard] = useState(null);
+  const [reading, setReading] = useState("Your reading will appear here.");
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("Idle");
 
-  useEffect(() => {
-    // Load default cards on mount
-    shuffleCards();
-  }, []);
+  // Just to have something for you to click – not important for the API
+  function handleShuffle() {
+    const random = SIMPLE_DECK[Math.floor(Math.random() * SIMPLE_DECK.length)];
+    setCard(random);
+  }
 
-  const shuffleCards = () => {
-    const deck = tarotDeck.map((c, index) => ({
-      ...c,
-      id: index + "-" + Math.random()
-    }));
-    deck.sort(() => Math.random() - 0.5);
-    setCards(deck);
-    setSelectedCards([]);
-  };
-
-  const spreadLimits = {
-    single: 1,
-    three: 3,
-    nine: 9,
-    yesno: 1,
-    comparison: 3,
-    celtic: 10
-  };
-
-  const selectedCount = selectedCards.filter(Boolean).length;
-  const canGetReading = selectedCount === spreadLimits[spreadType];
-  const selectCard = (card) => {
-    if (selectedCount >= spreadLimits[spreadType]) return;
-    setSelectedCards((prev) => [...prev, card]);
-  };
-
-  const generateExpertPrompt = (question, cards) => {
-    return `
-You are Sage Aurora, a professional tarot reader.
-
-Question: ${question}
-Cards drawn: ${cards.map(c => c.name).join(", ")}
-
-Give a deep, structured interpretation.
-`;
-  };
-
-  // -------------------------------------
-  // 🚀 FIXED FETCH CALL — WORKS 100%
-  // -------------------------------------
-  async function generateInterpretation() {
+  async function handleGetReading() {
     try {
       setLoading(true);
-      setAiStatus("⏳ Consulting the expert reader...");
+      setStatus("Calling /api/interpret …");
+      setReading("Waiting for AI…");
 
-      const prompt = generateExpertPrompt(questionInput, selectedCards);
+      const promptText = `
+You are a tarot expert. The question is: "${question || "general guidance"}".
+The selected card is: "${card || "no specific card"}".
+Give a short clear reading.
+      `.trim();
 
       const res = await fetch("/api/interpret", {
         method: "POST",
@@ -69,135 +43,128 @@ Give a deep, structured interpretation.
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt,
-          model: "llama-3.1-70b-versatile"
+          prompt: promptText,
+          model: "llama-3.1-70b-versatile",
         }),
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        setInterpretation("Error: " + (errData.error || "Unknown error"));
-        setAiStatus("❌ AI failed");
+        let msg = `HTTP ${res.status}`;
+        try {
+          const errJson = await res.json();
+          msg += errJson.error ? ` – ${errJson.error}` : "";
+        } catch (_) {}
+        setStatus("Error");
+        setReading(`Error from API: ${msg}`);
         return;
       }
 
       const data = await res.json();
       const text =
         data?.choices?.[0]?.message?.content ||
-        "No interpretation received.";
+        "No text returned from API.";
 
-      setInterpretation(text);
-      setAiStatus("✅ Reading complete");
+      setStatus("Success");
+      setReading(text);
     } catch (err) {
-      console.error(err);
-      setInterpretation("A client error occurred.");
-      setAiStatus("❌ Error");
+      console.error("CLIENT ERROR calling /api/interpret:", err);
+      setStatus("Client error");
+      setReading("Client error: " + (err.message || "unknown error"));
     } finally {
       setLoading(false);
     }
   }
-  return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Expert AI Reader</h1>
 
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#2b003b",
+        color: "#fff",
+        padding: "24px",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <h1 style={{ fontSize: "32px", marginBottom: "16px" }}>
+        Expert AI Reader – API TEST
+      </h1>
+
+      <label style={{ display: "block", marginBottom: "8px" }}>
+        Your question (optional):
+      </label>
       <textarea
-        style={styles.textarea}
-        placeholder="Ask your question..."
-        value={questionInput}
-        onChange={(e) => setQuestionInput(e.target.value)}
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        rows={4}
+        style={{
+          width: "100%",
+          maxWidth: "900px",
+          padding: "8px",
+          borderRadius: "4px",
+          border: "1px solid #555",
+          marginBottom: "16px",
+          color: "#000",
+        }}
       />
 
-      <div style={styles.controls}>
-        <button onClick={shuffleCards} style={styles.button}>Shuffle</button>
+      <div style={{ marginBottom: "16px" }}>
         <button
-          onClick={generateInterpretation}
+          onClick={handleShuffle}
           style={{
-            ...styles.button,
-            background: canGetReading ? "#50c878" : "#444",
-            cursor: canGetReading ? "pointer" : "not-allowed"
+            padding: "10px 16px",
+            borderRadius: "4px",
+            border: "none",
+            background: "#9b59b6",
+            color: "#fff",
+            fontWeight: 600,
+            marginRight: "12px",
+            cursor: "pointer",
           }}
-          disabled={!canGetReading}
         >
-          Get Reading
+          Shuffle (pick random card)
+        </button>
+
+        {/* THIS IS THE IMPORTANT BUTTON */}
+        <button
+          onClick={handleGetReading}
+          disabled={loading}
+          style={{
+            padding: "10px 16px",
+            borderRadius: "4px",
+            border: "none",
+            background: loading ? "#555" : "#e74c3c",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "Getting Reading..." : "Get Reading"}
         </button>
       </div>
 
-      <div style={styles.cardGrid}>
-        {cards.map((c) => (
-          <div
-            key={c.id}
-            style={styles.card}
-            onClick={() => selectCard(c)}
-          >
-            <img src={c.image} style={styles.cardImg} />
-          </div>
-        ))}
+      <div style={{ marginBottom: "12px" }}>
+        <strong>Selected card:</strong>{" "}
+        {card ? card : <span style={{ opacity: 0.7 }}>none (optional)</span>}
       </div>
 
-      <div style={styles.outputBox}>
-        <h2>Your Professional Reading</h2>
-        <p>{interpretation || "Your reading will appear here."}</p>
+      <div style={{ marginBottom: "12px" }}>
+        <strong>Status:</strong> {status}
+      </div>
+
+      <h2 style={{ marginTop: "24px", marginBottom: "8px" }}>
+        Your Professional Reading
+      </h2>
+      <div
+        style={{
+          maxWidth: "900px",
+          background: "rgba(0,0,0,0.25)",
+          padding: "16px",
+          borderRadius: "8px",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {reading}
       </div>
     </div>
   );
 }
-const styles = {
-  container: {
-    padding: "20px",
-    background: "linear-gradient(135deg, #2c0a3a, #4a0e61)",
-    minHeight: "100vh",
-    color: "#fff"
-  },
-  title: {
-    fontSize: "32px",
-    marginBottom: "20px"
-  },
-  textarea: {
-    width: "100%",
-    height: "80px",
-    padding: "10px",
-    marginBottom: "15px",
-    borderRadius: "8px"
-  },
-  controls: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "20px"
-  },
-  button: {
-    padding: "10px 20px",
-    background: "#9b4dff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold"
-  },
-  cardGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(6, 1fr)",
-    gap: "10px",
-    marginBottom: "20px"
-  },
-  card: {
-    background: "#222",
-    borderRadius: "8px",
-    padding: "5px",
-    cursor: "pointer"
-  },
-  cardImg: {
-    width: "100%",
-    borderRadius: "6px"
-  },
-  outputBox: {
-    background: "#00000055",
-    padding: "20px",
-    borderRadius: "10px"
-  }
-};
-
-const tarotDeck = [
-  { name: "The Fool", image: "/cards/fool.jpg" },
-  { name: "The Magician", image: "/cards/magician.jpg" },
-  // ... add your full deck here
-];
-
