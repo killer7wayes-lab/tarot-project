@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
   try {
     const body = await req.json();
-
     const { prompt, model } = body;
 
     if (!prompt) {
@@ -23,13 +22,17 @@ export async function POST(req) {
         model: model || "llama-3.1-70b-versatile",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.8,
-        max_tokens: 1500
+        max_tokens: 500,
       }),
     });
 
     const data = await apiRes.json();
 
+    // 🔥 ADD THIS — LOG THE RAW RESPONSE
+    console.log("RAW GROQ RESPONSE:", JSON.stringify(data, null, 2));
+
     return NextResponse.json(data);
+
   } catch (err) {
     console.error("SERVER ERROR:", err);
     return NextResponse.json(
