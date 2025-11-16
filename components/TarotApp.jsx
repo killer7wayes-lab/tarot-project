@@ -159,37 +159,59 @@ CLIENT'S READING:
 
 Please provide a warm, insightful reading with card meanings, how they relate to the question, practical guidance, and overall message. Be compassionate and helpful.`;
 
-    // 🔥 FIXED FETCH — ALWAYS POST — BODY NEVER EMPTY
-    const response = await fetch('/api/interpret', {
-      method: 'POST',
+async function generateInterpretation() {
+  try {
+    setLoading(true);
+    setAiStatus("⏳ Consulting the expert reader...");
+
+    // Build prompt from selected cards
+    const cardNames = selectedCards.map(c => c.name).join(", ");
+    const question = questionInput || "general guidance";
+
+    const expertPrompt = `
+You are "Sage Aurora," a master tarot reader with 30+ years of experience.
+
+CARDS: ${cardNames}
+QUESTION: ${question}
+Provide a deep, structured tarot interpretation.
+`;
+
+    // --- THE FIXED FETCH CALL ---
+    const res = await fetch("/api/interpret", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: expertPrompt || "general reading",
-        model: "llama-3.1-8b-instant",
-      })
+        prompt: expertPrompt,
+        model: "llama-3.1-70b-versatile"
+      }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API returned ${response.status}: ${errorText}`);
+    if (!res.ok) {
+      const errorData = await res.json();
+      setInterpretation(`Error: ${errorData.error || "Unknown error"}`);
+      setAiStatus("❌ AI Failed");
+      return;
     }
 
-    const data = await response.json();
-    
-    if (data.choices && data.choices[0] && data.choices[0].message) {
-      setInterpretation(data.choices[0].message.content);
-    } else {
-      throw new Error('Invalid response format');
-    }
-    
-  } catch (error) {
-    setInterpretation(`Error: ${error.message}. Please try again.`);
+    const data = await res.json();
+
+    // Groq returns: data.choices[0].message.content
+    const text =
+      data?.choices?.[0]?.message?.content ||
+      "No interpretation received.";
+
+    setInterpretation(text);
+    setAiStatus("✅ Expert Reading Complete");
+  } catch (err) {
+    console.error("CLIENT ERROR:", err);
+    setAiStatus("❌ Client Error");
+    setInterpretation("An error occurred. Try again.");
   } finally {
     setLoading(false);
   }
-};
+}
 
   useEffect(() => {
     shuffleCards();
