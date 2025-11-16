@@ -27,10 +27,69 @@ const tarotCards = [
   { id: 20, name: "Judgement", icon: "👼" },
   { id: 21, name: "The World", icon: "🌍" },
   
-  // Wands Suite (14 cards) - shortened for example
+  // Wands Suite (14 cards)
   { id: 22, name: "Ace of Wands", icon: "🔥" },
   { id: 23, name: "Two of Wands", icon: "🔥" },
-  // ... Add all 78 cards from your original
+  { id: 24, name: "Three of Wands", icon: "🔥" },
+  { id: 25, name: "Four of Wands", icon: "🔥" },
+  { id: 26, name: "Five of Wands", icon: "🔥" },
+  { id: 27, name: "Six of Wands", icon: "🔥" },
+  { id: 28, name: "Seven of Wands", icon: "🔥" },
+  { id: 29, name: "Eight of Wands", icon: "🔥" },
+  { id: 30, name: "Nine of Wands", icon: "🔥" },
+  { id: 31, name: "Ten of Wands", icon: "🔥" },
+  { id: 32, name: "Page of Wands", icon: "🔥" },
+  { id: 33, name: "Knight of Wands", icon: "🔥" },
+  { id: 34, name: "Queen of Wands", icon: "🔥" },
+  { id: 35, name: "King of Wands", icon: "🔥" },
+  
+  // Cups Suite (14 cards)
+  { id: 36, name: "Ace of Cups", icon: "💧" },
+  { id: 37, name: "Two of Cups", icon: "💧" },
+  { id: 38, name: "Three of Cups", icon: "💧" },
+  { id: 39, name: "Four of Cups", icon: "💧" },
+  { id: 40, name: "Five of Cups", icon: "💧" },
+  { id: 41, name: "Six of Cups", icon: "💧" },
+  { id: 42, name: "Seven of Cups", icon: "💧" },
+  { id: 43, name: "Eight of Cups", icon: "💧" },
+  { id: 44, name: "Nine of Cups", icon: "💧" },
+  { id: 45, name: "Ten of Cups", icon: "💧" },
+  { id: 46, name: "Page of Cups", icon: "💧" },
+  { id: 47, name: "Knight of Cups", icon: "💧" },
+  { id: 48, name: "Queen of Cups", icon: "💧" },
+  { id: 49, name: "King of Cups", icon: "💧" },
+  
+  // Swords Suite (14 cards)
+  { id: 50, name: "Ace of Swords", icon: "⚔️" },
+  { id: 51, name: "Two of Swords", icon: "⚔️" },
+  { id: 52, name: "Three of Swords", icon: "⚔️" },
+  { id: 53, name: "Four of Swords", icon: "⚔️" },
+  { id: 54, name: "Five of Swords", icon: "⚔️" },
+  { id: 55, name: "Six of Swords", icon: "⚔️" },
+  { id: 56, name: "Seven of Swords", icon: "⚔️" },
+  { id: 57, name: "Eight of Swords", icon: "⚔️" },
+  { id: 58, name: "Nine of Swords", icon: "⚔️" },
+  { id: 59, name: "Ten of Swords", icon: "⚔️" },
+  { id: 60, name: "Page of Swords", icon: "⚔️" },
+  { id: 61, name: "Knight of Swords", icon: "⚔️" },
+  { id: 62, name: "Queen of Swords", icon: "⚔️" },
+  { id: 63, name: "King of Swords", icon: "⚔️" },
+  
+  // Pentacles Suite (14 cards)
+  { id: 64, name: "Ace of Pentacles", icon: "💰" },
+  { id: 65, name: "Two of Pentacles", icon: "💰" },
+  { id: 66, name: "Three of Pentacles", icon: "💰" },
+  { id: 67, name: "Four of Pentacles", icon: "💰" },
+  { id: 68, name: "Five of Pentacles", icon: "💰" },
+  { id: 69, name: "Six of Pentacles", icon: "💰" },
+  { id: 70, name: "Seven of Pentacles", icon: "💰" },
+  { id: 71, name: "Eight of Pentacles", icon: "💰" },
+  { id: 72, name: "Nine of Pentacles", icon: "💰" },
+  { id: 73, name: "Ten of Pentacles", icon: "💰" },
+  { id: 74, name: "Page of Pentacles", icon: "💰" },
+  { id: 75, name: "Knight of Pentacles", icon: "💰" },
+  { id: 76, name: "Queen of Pentacles", icon: "💰" },
+  { id: 77, name: "King of Pentacles", icon: "💰" }
 ];
 
 export default function TarotApp() {
@@ -100,6 +159,8 @@ CLIENT'S READING:
 
 Please provide a warm, insightful reading with card meanings, how they relate to the question, practical guidance, and overall message. Be compassionate and helpful.`;
 
+      console.log('Sending request to API...');
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -114,19 +175,27 @@ Please provide a warm, insightful reading with card meanings, how they relate to
         })
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('API request failed');
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('API success:', data);
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
         setInterpretation(data.choices[0].message.content);
+      } else if (data.error) {
+        throw new Error(data.error);
       } else {
-        throw new Error('Invalid response format');
+        throw new Error('Invalid response format from AI');
       }
       
     } catch (error) {
+      console.error('Error in generateInterpretation:', error);
       setInterpretation(`Error: ${error.message}. Please try again.`);
     } finally {
       setLoading(false);
