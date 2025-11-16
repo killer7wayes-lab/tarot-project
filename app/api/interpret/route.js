@@ -1,29 +1,21 @@
 export async function POST(request) {
   try {
-    // Get the data from frontend
-    const { cards, question, spread } = await request.json();
+    const body = await request.json();
+    console.log('Interpretation request:', body);
     
-    console.log('Received interpretation request:', {
-      cards, question, spread
-    });
-
-    // TODO: Add your actual tarot interpretation logic here
-    // For now, return a sample interpretation
-    const interpretation = {
-      reading: "This is a sample interpretation. Add your tarot logic here!",
-      cards: cards || [],
-      summary: "Your reading suggests positive changes ahead.",
-      advice: "Trust your intuition and move forward with confidence."
-    };
-
+    // Your tarot interpretation logic here
     return Response.json({ 
-      success: true, 
-      ...interpretation
+      success: true,
+      message: "Your tarot reading is ready!",
+      interpretation: "The cards reveal positive changes and new opportunities coming your way. Trust your intuition as you move forward.",
+      cards: body.cards || [],
+      summary: "Overall positive reading"
     });
     
   } catch (error) {
-    console.error('Interpretation error:', error);
+    console.error('Error in interpretation:', error);
     return Response.json({ 
+      success: false,
       error: "Failed to generate interpretation" 
     }, { 
       status: 500 
