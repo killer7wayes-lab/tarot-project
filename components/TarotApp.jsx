@@ -136,21 +136,21 @@ export default function TarotApp() {
     }
   };
 
-  const generateInterpretation = async () => {
-    setLoading(true);
-    setInterpretation('');
+ const generateInterpretation = async () => {
+  setLoading(true);
+  setInterpretation('');
+  
+  try {
+    const cardNames = selectedCards.filter(card => card).map(card => card.name).join(', ');
+    let questionText = "";
     
-    try {
-      const cardNames = selectedCards.filter(card => card).map(card => card.name).join(', ');
-      let questionText = "";
-      
-      if (currentSpread === 'comparison') {
-        questionText = `Comparison between "${option1 || 'Option A'}" and "${option2 || 'Option B'}"`;
-      } else {
-        questionText = question || "general guidance and insight";
-      }
+    if (currentSpread === 'comparison') {
+      questionText = `Comparison between "${option1 || 'Option A'}" and "${option2 || 'Option B'}"`;
+    } else {
+      questionText = question || "general guidance and insight";
+    }
 
-      const expertPrompt = `You are "Sage Aurora," a master tarot reader with 30+ years of experience. Provide a insightful tarot reading.
+    const expertPrompt = `You are "Sage Aurora," a master tarot reader with 30+ years of experience. Provide a insightful tarot reading.
 
 CLIENT'S READING:
 - Spread: ${currentSpread}
@@ -159,48 +159,37 @@ CLIENT'S READING:
 
 Please provide a warm, insightful reading with card meanings, how they relate to the question, practical guidance, and overall message. Be compassionate and helpful.`;
 
-      console.log('Sending request to API...');
+    // 🔥 FIXED FETCH — ALWAYS POST — BODY NEVER EMPTY
+    const response = await fetch('/api/interpret', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: expertPrompt || "general reading",
+        model: "llama-3.1-8b-instant",
+      })
+    });
 
-      const response = await fetch('/api/interpret', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: "user",
-            content: expertPrompt
-          }],
-          model: "llama-3.1-8b-instant"
-        })
-      });
-
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('API success:', data);
-      
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        setInterpretation(data.choices[0].message.content);
-      } else if (data.error) {
-        throw new Error(data.error);
-      } else {
-        throw new Error('Invalid response format from AI');
-      }
-      
-    } catch (error) {
-      console.error('Error in generateInterpretation:', error);
-      setInterpretation(`Error: ${error.message}. Please try again.`);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API returned ${response.status}: ${errorText}`);
     }
-  };
+
+    const data = await response.json();
+    
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      setInterpretation(data.choices[0].message.content);
+    } else {
+      throw new Error('Invalid response format');
+    }
+    
+  } catch (error) {
+    setInterpretation(`Error: ${error.message}. Please try again.`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     shuffleCards();
