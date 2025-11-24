@@ -169,26 +169,27 @@ function drawCard() {
         cardDiv.classList.add('cross-center-2');
     }
 
-    // 3. IMAGE LOGIC
-    let cardContent = "";
-    if (state.deckTheme === 'Goth') {
-        // Convert "The sun" to "the_sun.png"
-        const fileName = cardName.toLowerCase().split(' ').join('_') + ".png";
-        // Ensure you have the folder: public/decks/goth/
-        cardContent = `<img src="decks/goth/${fileName}" class="card-img" alt="${cardName}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"> <div class="fallback-text" style="display:none">${cardName}</div>`;
-    } else {
-        cardContent = `<div class="card-name">${cardName}</div>`;
-    }
+    // --- 3. IMAGE LOGIC START ---
+let cardContent = "";
 
-    // 4. Render Inner Card
-    cardDiv.innerHTML = `
-        <div class="card-inner ${isReversed ? 'is-flipped' : ''}">
-            ${cardContent}
-            ${isReversed ? '<div class="rev-icon" style="font-size:0.8rem; margin-top:5px;">↻</div>' : ''}
-        </div>
-    `;
-    
-    container.appendChild(cardDiv);
+if (state.deckTheme === 'Goth' || state.deckTheme === 'Anime') {
+
+    // Convert "The Fool" → "the_fool.jpg"
+    const fileName = cardName.toLowerCase().split(' ').join('_') + ".jpg";
+
+    // Choose correct folder based on theme
+    const folderPath = state.deckTheme === 'Goth'
+        ? "decks/goth/"
+        : "decks/anime/";
+
+    cardContent = `<img src="${folderPath}${fileName}" class="card-img" alt="${cardName}">`;
+
+} else {
+    // Default Text for other themes
+    cardContent = `<div class="card-name">${cardName}</div>`;
+}
+// --- IMAGE LOGIC END ---
+
 
     // Update Counter
     const remaining = state.cardsNeeded - state.cardsDrawn.length;
